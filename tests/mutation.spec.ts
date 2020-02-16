@@ -1,6 +1,6 @@
 import { Writer } from '@xanthous/n3';
 
-import { Facet, Node, Predicate, Property, Uid } from '../src';
+import { Facet, Node, IPredicate, Predicate, Property, Uid } from '../src';
 
 import { MetadataStorageUtils } from '../src/metadata/storage';
 import { ObjectMapper } from '../src/serialization/mapper';
@@ -31,7 +31,7 @@ describe('Serialize deserialize', () => {
       name: string;
 
       @Predicate({ type: () => Hobby })
-      hobbies: Predicate<Hobby>;
+      hobbies: IPredicate<Hobby>;
     }
 
     const data = [
@@ -74,7 +74,7 @@ describe('Serialize deserialize', () => {
       name: string;
 
       @Predicate({ type: () => Person, facet: PersonKnows })
-      friends: Predicate<Person, PersonKnows>;
+      friends: IPredicate<Person, PersonKnows>;
     }
 
     const data = [
@@ -129,7 +129,7 @@ describe('Serialize deserialize', () => {
       name: string;
 
       @Predicate({ type: () => Person, facet: PersonKnows })
-      friends: Predicate<Person, PersonKnows>;
+      friends: IPredicate<Person, PersonKnows>;
     }
 
     const john = new Person();
@@ -148,6 +148,71 @@ describe('Serialize deserialize', () => {
     console.log(MutationBuilder.getSetNQuadsString(kamil));
   });
 
+  it('should use refer to same temporary uid for node', function() {
+    @Node()
+    class Person {
+      @Uid()
+      id: string;
+
+      @Property()
+      name: string;
+    }
+
+    const kamil = new Person();
+    kamil.name = 'Kamil';
+
+    expect(MutationBuilder.getSetNQuadsString(kamil))
+        .toEqual(MutationBuilder.getSetNQuadsString(kamil));
+  });
+
+  it('should support the same recursive ID', ()=>{
+    @Node()
+    class Cell{
+      @Uid()
+      uid: string;
+
+      @Predicate({ name: 'from_row', type: () => Row })
+      fromRow: IPredicate<Row>;
+
+      @Predicate({ name: 'from_column', type: () => Column })
+      fromColumn: IPredicate<Column>;
+    }
+
+    @Node()
+    class Row{
+      @Uid()
+      uid: string;
+
+      @Predicate({ name: 'has_cell', type: () => Cell })
+      hasCell:  IPredicate<Cell>;
+    }
+
+    @Node()
+    class Column{
+      @Uid()
+      uid: string;
+
+      @Predicate({ name: 'has_cell', type: () => Cell })
+      hasCell:  IPredicate<Cell>;
+    }
+
+    const cell = new Cell();
+    const row = new Row();
+    const column = new Column();
+
+    cell.fromRow.add(row);
+    cell.fromColumn.add(column);
+
+    row.hasCell.add(cell);
+
+    const mutation = MutationBuilder.getSetNQuads(row);
+
+    const rowId = mutation.nodeMap.get(row)!.value;
+    const fromRowId = mutation.quads.find(r=>r.predicate.id === 'from_row')!.object.value;
+
+    expect(rowId).toEqual(fromRowId);
+  });
+
   it('should be able to handle reverse edges', function() {
     @Node()
     class Person {
@@ -158,7 +223,7 @@ describe('Serialize deserialize', () => {
       name: string;
 
       @Predicate({ type: () => Person })
-      friends: Predicate<Person>;
+      friends: IPredicate<Person>;
     }
 
     const lola = new Person();

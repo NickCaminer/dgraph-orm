@@ -1,6 +1,6 @@
-import { NamedNode, DataFactory } from '@xanthous/n3';
+import { DataFactory, NamedNode } from '@xanthous/n3';
 
-import { ObjectLiteral } from '../utils/type';
+import { IObjectLiteral } from '../utils/type';
 
 // TODO: dgraph type enums
 
@@ -13,7 +13,7 @@ export enum PropertyType {
   DateTime = 'dateTime',
   Geo = 'geo',
   Password = 'password',
-  Uid = 'uid',
+  Uid = 'uid'
 }
 
 export enum DataType {
@@ -21,13 +21,13 @@ export enum DataType {
   Int = 'xs:int',
   Float = 'xs:float',
   String = 'xs:string',
-  Bool = 'xs:bool',
+  Bool = 'xs:boolean',
   DateTime = 'xs:dateTime',
-  Geo = 'xs:geo',
-  Password = 'xs:string',
+  Geo = 'geo:geojson',
+  Password = 'xs:password'
 }
 
-const REFLECTED_TYPE_TO_PREDICATE_TYPE: ObjectLiteral<PropertyType> = {
+const REFLECTED_TYPE_TO_PREDICATE_TYPE: IObjectLiteral<PropertyType> = {
   string: PropertyType.String,
   boolean: PropertyType.Bool,
   number: PropertyType.Float // infer number to float.
